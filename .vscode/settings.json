@@ -1,0 +1,9 @@
+{
+    "testMate.cpp.test.executables":"/home/me/KuiperLLama-main/build/*/*",
+    "testMate.cpp.test.workingDirectory": "${absDirpath}",
+    "files.associations": {
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "streambuf": "cpp"
+    }
+}
