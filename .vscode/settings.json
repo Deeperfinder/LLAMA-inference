@@ -4,6 +4,10 @@
     "files.associations": {
         "*.tcc": "cpp",
         "fstream": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "cstdint": "cpp",
+        "bitset": "cpp",
+        "functional": "cpp",
+        "regex": "cpp"
     }
 }

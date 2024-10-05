@@ -92,6 +92,22 @@ TEST(test_tensor, to_cu) {
   delete[] p2;
 }
 
+// 对齐数据位置
+TEST(test_tensor, index) {
+  using namespace base;
+  float* ptr = new float[32];
+  ptr[0] = 31;
+  tensor::Tensor t1(base::DataType::kDataTypeFp32, 32, false, nullptr, ptr);
+  void* p1 = t1.ptr<void>();
+  p1 += 1;
+  float* f1 = t1.ptr<float>();
+  f1 += 1;
+  ASSERT_NE(p1, f1);
+  delete[] ptr;
+}
+
+
+
 TEST(test_tensor, init1) {
   using namespace base;
   auto alloc_cu = base::CPUDeviceAllocatorFactory::get_instance();
@@ -102,6 +118,7 @@ TEST(test_tensor, init1) {
   ASSERT_EQ(t1.is_empty(), false);
 }
 
+// 将已有的数据分配给tensor进行使用
 TEST(test_tensor, init3) {
   using namespace base;
   float* ptr = new float[32];
@@ -110,6 +127,7 @@ TEST(test_tensor, init3) {
   ASSERT_EQ(t1.is_empty(), false);
   ASSERT_EQ(t1.ptr<float>(), ptr);
   ASSERT_EQ(*t1.ptr<float>(), 31);
+  delete[] ptr;
 }
 
 TEST(test_tensor, init2) {

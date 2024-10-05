@@ -24,6 +24,7 @@ void rmsnorm_kernel_cpu(const tensor::Tensor& input, const tensor::Tensor& weigh
   const float eps = 1e-5f;
   const float mean = arma::as_scalar(arma::mean(arma::pow(in_tensor, 2))) + eps;
   const float rsqrt = 1.f / std::sqrt(mean);
+  // 在armadillo中，%表示矩阵乘法逐元素乘法操作，*表示元素乘法
   out_tensor = wei_tensor % (rsqrt * in_tensor);
 }
 }  // namespace kernel

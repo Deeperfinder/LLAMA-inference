@@ -1,44 +1,63 @@
 ### course1-内存管理和设备类
 allocator类来分配不同deive的内存，使用buffer类来管理内存，use_external判断是否由buffer管理，
 buffer是智能指针，可以自动释放内存，析构函数去释放ptr
+<br>
 ### course2-算子类的设计
+
 1. base_forward 调用每个算子的前向计算
 2. 在base_forward中 get input and weights
 3. seletct kernel, 根据设备的类型选择算子的实现,返回函数指针
 4. 传入inputs and weights ，调用kernel的计算函数， 将结果返回给到output中
+<br>
+### course3-张量的设计和实现
+张量：多维度数组，在推理流程中管理、传递数据，并结合Buffer类来自动管理内存或者显存资源 <br>
+tensor释放的时候，buffer也会释放 <br>
+步长为后续所有维度的乘积<br>
 
-### couse3-张量的设计和实现
-张量：多维度数组，在推理流程中管理、传递数据，并结合Buffer类来自动管理内存或者显存资源
+### course4-RMSNorm算子的实现
 
+基本公式如下所示: <br>
+<img src="./imgs/rmsnorm.jpg" alt="Screenshot of the Application" width="300" height="300"  />
 
+分CPU和GPU两种实现，CPU实现使用armadillo库，GPU实现使用cuda。
+GPU：
+最小的执行单元是thread  <br>
+最小的调度单元是warp，硬件会一次性把一个wrap放在就绪的硬件执行单元中。 <br>
+执行的时候将输入的数据打包成float4，减少内存的访问次数，提高内存带宽利用率。
+使用blockreduce
+<br>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### course5-RMSNorm算子优化
+在做规约的时候，以32个线程为单位进行(block 规约)， 假设一个block有128个线程， 那么将其分为4份，每一份计算完成之后<br>
+保存到shared memory中，最后对这四个进行相加， <br>
 
 
+### course6-量化的实现
+Andrej karpathy 提供的权重dump工具
+1. 使用transformers库加载llama结构的模型
+2. 从模型的配置config.json中构造模型参数
+3. 根据配置信息创建一个导出的模型
+4. 为导出的模型配置权重，权重来自huggingface的预训练权重
+5. 开始导出权重
 
+<br>
 
+### course7-cuda的向量化存取
 
-
-
-
-
+<br>
+<br>
+<br>
+<br>
+<br>
+<br> 
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 #  News：新课发布，《动手自制大模型推理框架》，全手写cuda算子，课程框架支持LLama2和3.x
 Hi，各位朋友们好！我是 KuiperInfer 的作者。KuiperInfer 作为一门开源课程，迄今已经在 GitHub 上已斩获 2.4k star。 如今在原课程的基础上，**我们全新推出了《动手自制大模型推理框架》， 新课程支持Llama系列大模型（包括最新的LLama3.2），同时支持 Cuda 加速和 Int8 量化，自推出以来便广受好评。**
 
