@@ -2,7 +2,6 @@
 #include "rmsnorm_kernel.cuh"
 namespace kernel {
 template <int32_t BLOCK_DIM>
-// 使用共享内存来存储临时数据，如 BlockReduce 的临时存储和块内归约的结果。共享内存比全局内存更快，因为它位于 GPU 的片上内存中。
 static __global__ void row_rmsnorm_f32(float* in, float* wei, float* out, int size, float eps) {
   const int tid = threadIdx.x;
 
@@ -60,7 +59,11 @@ void rmsnorm_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight
         weight.device_type() == base::DeviceType::kDeviceCUDA &&
         output.device_type() == base::DeviceType::kDeviceCUDA);
 
+#ifdef QWEN2_SUPPORT
+  const float eps = 1e-6f;
+#else
   const float eps = 1e-5f;
+#endif
   const int32_t size = static_cast<int32_t>(input.size());
   float* in_ptr = const_cast<float*>(input.ptr<float>());
   float* wei_ptr = const_cast<float*>(weight.ptr<float>());

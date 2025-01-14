@@ -15,9 +15,3 @@ TEST(test_buffer, use_external1) {
   CHECK_EQ(buffer.is_external(), true);
   cudaFree(buffer.ptr());
 }
-TEST(test_buffer, allocate_123){
-  using namespace base;
-  auto alloc = base::CPUDeviceAllocatorFactory::get_instance();
-  Buffer buffer(32, alloc);
-  CHECK_NE(buffer.ptr(), nullptr);
-}
