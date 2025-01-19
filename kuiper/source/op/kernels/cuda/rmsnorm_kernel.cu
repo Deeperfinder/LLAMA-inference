@@ -1,6 +1,28 @@
 #include <cub/block/block_reduce.cuh>
 #include "rmsnorm_kernel.cuh"
 namespace kernel {
+template <int32_t Block_DIM>
+static __global__ void row_rmsnorm_f32_novec(float* in, float* wei, float* out, int size, float eps){
+  const int tid = threadIdx.x;
+  float sum = 0.0f;
+  for (int i = tid; i< size; i+=blockDim.x){
+    sum += in[i] * in[i];
+  }
+
+  using BlockReduce = cub::BlockReduce<float, Block_DIM>;
+  __shared__ typename BlockReduce::TempStorage temp;
+  __shared__ float shared_val;
+  sum = BlockReduce(temp).Sum(sum);
+  if (threadIdx.x == 0){
+    shared_val = sum;
+  }
+  __syncthreads();
+  sum = shared_val;
+  const float scale = rsqrtf(sum / static_cast<float>(size) + eps);
+  for(int i = tid; i < size; i+=blockDim.x){
+    out[i] = wei[i] * in[i] * scale;
+  }
+}
 template <int32_t BLOCK_DIM>
 static __global__ void row_rmsnorm_f32(float* in, float* wei, float* out, int size, float eps) {
   const int tid = threadIdx.x;
@@ -71,9 +93,11 @@ void rmsnorm_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight
   constexpr int threads_num = 128;
   if (stream) {
     cudaStream_t stream_ = static_cast<cudaStream_t>(stream);
-    row_rmsnorm_f32<128><<<1, threads_num, 0, stream_>>>(in_ptr, wei_ptr, out_ptr, size, eps);
+    row_rmsnorm_f32_novec<128><<<1, threads_num, 0, stream_>>>(in_ptr, wei_ptr, out_ptr, size, eps);
+    //row_rmsnorm_f32<128><<<1, threads_num, 0, stream_>>>(in_ptr, wei_ptr, out_ptr, size, eps);
   } else {
-    row_rmsnorm_f32<128><<<1, threads_num>>>(in_ptr, wei_ptr, out_ptr, size, eps);
+    row_rmsnorm_f32_novec<128><<<1, threads_num>>>(in_ptr, wei_ptr, out_ptr, size, eps);
+    //row_rmsnorm_f32<128><<<1, threads_num>>>(in_ptr, wei_ptr, out_ptr, size, eps);
   }
 }
 }  // namespace kernel

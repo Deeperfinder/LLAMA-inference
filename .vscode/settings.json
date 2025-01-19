@@ -71,6 +71,9 @@
         "__tree": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "armadillo": "cpp"
+        "armadillo": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "filesystem": "cpp"
     }
 }

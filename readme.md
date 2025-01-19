@@ -35,12 +35,21 @@ GPU：
 <br>
 
 ### course6-量化的实现
-Andrej karpathy 提供的权重dump工具， int8 weight only , group weight
+Andrej karpathy 提供的权重dump工具， int8 weight only , group weight            
+这里主要还是减小模型的参数量，使得本来需要4GB的显存的FP32模型，只需要大概1GB多一点就行               
+在计算的时候会反量化会到FP32和输入数据进行相乘。
 1. 使用transformers库加载llama结构的模型
 2. 从模型的配置config.json中构造模型参数
 3. 根据配置信息创建一个导出的模型
 4. 为导出的模型配置权重，权重来自huggingface的预训练权重
 5. 开始导出权重
+
+命令行：
+```python
+python export.py tinyllama-1.1B.bin --hf /home/modelscope/TinyLlama-1.1B-Chat-v1.0
+python export.py /home/modelscope/TinyLlama-1.1B-Chat-v1.0/tinyllama-1.1B-int8.bin --hf /home/modelscope/TinyLlama-1.1B-Chat-v1.0 --version 3
+
+``` 
 <br> 
 
 ### course7-cuda的向量化存取
@@ -64,8 +73,10 @@ for(int i=tid; i<size; i+=blockDim.x){
   }
 ```
 1. 这样会提升内存和L2的吞吐率
-2. gpu运算的指令减少
+2. gpu运算的指令减少，roofline 图往左上移动
 3. L2 cache的命中率提升
+![alt text](/imgs/image.png)
+![alt text](/imgs/image.png)
 <br>
 
 ### course8-显存的管理
