@@ -76,7 +76,7 @@ for(int i=tid; i<size; i+=blockDim.x){
 2. gpu运算的指令减少，roofline 图往左上移动
 3. L2 cache的命中率提升
 ![alt text](/imgs/image.png)
-![alt text](/imgs/image.png)
+![alt text](/imgs/course8_cudavec-1.png)
 <br>
 
 ### course8-显存的管理
