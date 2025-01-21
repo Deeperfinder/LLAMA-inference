@@ -1,6 +1,8 @@
 /build/
 .clang-format
 model/
-.vscode/
+.vscode/launch.json
 __pycache__/
 /lib/
+*.bin
+.vscode/
