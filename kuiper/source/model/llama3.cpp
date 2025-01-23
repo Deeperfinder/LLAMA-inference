@@ -40,7 +40,7 @@ void LLama2Layers::to_cuda(std::shared_ptr<kernel::CudaConfig> config) {
   if (mha_layer_) {
     mha_layer_->set_cuda_config(config);
     mha_layer_->to_cuda();
-  }
+  } 
 
   for (auto& weight_layer : wq_layers_) {
     if (weight_layer) {
@@ -295,12 +295,14 @@ void LLama2Model::create_param_layers() {
   llama_layers_->embedding_layer_ = std::make_shared<op::EmbeddingLayer>(
       device_type_, config_->dim_, config_->seq_len_, std::abs(config_->vocab_size_));
 
+  // weights head 加上0的offset
   const void* weight_embedding = raw_model_data_->weight(0);
   llama_layers_->embedding_layer_->set_weight(0, {std::abs(config_->vocab_size_), config_->dim_},
                                               weight_embedding, cpu_device_type);
 
   // create all matmul layer
   int32_t dim = config_->dim_;
+  // embedding + rmsnorm
   size_t pos = dim * std::abs(config_->vocab_size_) + dim * config_->layer_num_;
   // create weight matrix for query
   for (int32_t i = 0; i < config_->layer_num_; ++i) {

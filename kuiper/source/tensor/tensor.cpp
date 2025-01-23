@@ -107,6 +107,7 @@ void Tensor::to_cuda(cudaStream_t stream) {
   if (device_type == base::DeviceType::kDeviceUnknown) {
     LOG(ERROR) << "The device type of the tensor is unknown.";
   } else if (device_type == base::DeviceType::kDeviceCPU) {
+    // 获取cuda的allocate,整个程序只能有一个
     size_t byte_size = this->byte_size();
     auto cu_alloc = base::CUDADeviceAllocatorFactory::get_instance();
     auto cu_buffer = std::make_shared<base::Buffer>(byte_size, cu_alloc);

@@ -600,7 +600,7 @@ def model_export(model, filepath, version, dtype=torch.float32):
     v0: legacy llama2.c float format, DEPRECATED
     v1: float32 export
     v2: int8 quantized Q8_0 export, similar to llama.cpp, in groups
-    # TODO: add dtype export support for other versions (?)
+    # TODO: add dtype export support for other versions (?) 
     """
     if version == 0:
         legacy_export(model, filepath)

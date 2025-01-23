@@ -186,7 +186,7 @@ base::Status LayerParam::set_weight(int32_t idx, const std::vector<int32_t>& dim
   CHECK_GE(idx, 0);
   CHECK_LT(idx, weights_.size());
   CHECK_NE(weight_ptr, nullptr);
-
+  // llama 7b size = 32000*4096*4 ~ 500MB
   size_t size = std::accumulate(dims.begin(), dims.end(), sizeof(float), std::multiplies<>());
   std::shared_ptr<base::Buffer> buffer =
       std::make_shared<base::Buffer>(size, nullptr, const_cast<void*>(weight_ptr), true);
@@ -196,6 +196,7 @@ base::Status LayerParam::set_weight(int32_t idx, const std::vector<int32_t>& dim
 
   if (!is_quant_layer_) {
     tensor::Tensor weight(base::DataType::kDataTypeFp32, dims);
+    // 本质上是给buffer赋device_type
     weight.set_device_type(device_type);
     CHECK(weight.assign(buffer));
     weights_.at(idx) = weight;

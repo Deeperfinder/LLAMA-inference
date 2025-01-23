@@ -60,6 +60,7 @@ base::Status Model::read_model_file() {
         "Failed to retrieve the configuration information from the model "
         "file.");
   }
+  // 当使用 fread 读取文件时，文件指针会自动向后移动，移动的字节数等于读取的字节数。
   if (is_quant_model_) {
     if (fread(&group_size_, sizeof(int32_t), 1, file) != 1) {
       return error::ModelParseError(
@@ -101,6 +102,7 @@ base::Status Model::read_model_file() {
   }
 
   raw_model_data_->fd = fd;
+  // 返回mmap的内存地址，赋值给raw_model_data_->data
   raw_model_data_->data =
       mmap(nullptr, raw_model_data_->file_size, PROT_READ, MAP_PRIVATE, raw_model_data_->fd, 0);
 
@@ -108,6 +110,7 @@ base::Status Model::read_model_file() {
     return error::ModelParseError("Failed to map the weight file " + model_path_ + " into memory.");
   }
   if (!is_quant_model_) {
+    // 给raw_model_data_->weight_data 指针赋值
     raw_model_data_->weight_data =
         static_cast<int8_t*>(raw_model_data_->data) + sizeof(ModelConfig);
   } else {

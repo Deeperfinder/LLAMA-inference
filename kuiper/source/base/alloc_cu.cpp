@@ -74,6 +74,7 @@ void CUDADeviceAllocator::release(void* ptr) const {
   cudaError_t state = cudaSuccess;
   for (auto& it : cuda_buffers_map_) {
     // 判断每个设备上的no_bysy_cnt是否大于1GB, 如果是，释放其内存
+    // 释放不了的（busy状态)就把他再次存入到cuda_buffers_map中去
     if (no_busy_cnt_[it.first] > 1024 * 1024 * 1024) {
       auto& cuda_buffers = it.second;
       std::vector<CudaMemoryBuffer> temp;
