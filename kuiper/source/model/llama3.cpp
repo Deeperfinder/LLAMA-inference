@@ -292,6 +292,7 @@ void LLama2Model::create_param_layers() {
   CHECK(llama_layers_ != nullptr);
   // The embedding layer
   auto cpu_device_type = base::DeviceType::kDeviceCPU;
+  // 基类指向派生类的指针
   llama_layers_->embedding_layer_ = std::make_shared<op::EmbeddingLayer>(
       device_type_, config_->dim_, config_->seq_len_, std::abs(config_->vocab_size_));
 
@@ -386,7 +387,7 @@ void LLama2Model::create_param_layers() {
   for (int32_t i = 0; i < config_->layer_num_; ++i) {
     std::shared_ptr<op::RmsNormLayer> rms_norm_layer =
         std::make_shared<op::RmsNormLayer>(device_type_, config_->dim_);
-
+    // rmsNorm的weight为缩放因子
     const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
     rms_norm_layer->set_weight(0, {config_->dim_}, weight_rmsnorm, cpu_device_type);
     llama_layers_->rmsnorm_layers_.push_back(rms_norm_layer);
@@ -425,6 +426,7 @@ void LLama2Model::create_param_layers() {
 }
 
 void LLama2Model::init_mem() {
+  // 根据设备类型，选择对应的allocator
   std::shared_ptr<base::DeviceAllocator> alloc;
   if (device_type_ == base::DeviceType::kDeviceCPU) {
     alloc = base::CPUDeviceAllocatorFactory::get_instance();
@@ -617,7 +619,7 @@ void LLama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_ten
   int32_t pos = pos_tensor.index<int32_t>(0);
   // wq wk wv @ input
   const auto& [key, val] = slice_kv_cache(layer_idx, pos);
-  // query
+  // query 
   const auto& query_layer = llama_layers_->wq_layers_.at(layer_idx);
   CHECK_NE(query_layer, nullptr) << "The query layer in the attention block is null pointer.";
 

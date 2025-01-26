@@ -137,6 +137,13 @@ template <typename T>
 const T* Tensor::ptr(int64_t index) const {
   CHECK(buffer_ != nullptr && buffer_->ptr() != nullptr)
       << "The data area buffer of this tensor is empty or it points to a null pointer.";
+  // 对T* 进行 + index操作， 将void * 转为T* 类型，以便计算偏移量
+  // 1. 这里为什么不用static_cast<T*>(buffer_->ptr()) + index呢？
+  //      static_cast语义更加严格，通常用于类型之间有逻辑关系的转换
+  //      在底层数据操作中，reinterpret_cast更加常见，它明确表示"按位重新解释"
+  // 2. const:
+  //      表示返回的指针是指向常量数据的指针，不能通过该指针修改数据
+  //      成员函数末尾的const承诺不会修改类的成员变量
   return reinterpret_cast<const T*>(buffer_->ptr()) + index;
 }
 }  // namespace tensor

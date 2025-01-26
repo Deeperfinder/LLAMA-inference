@@ -2,6 +2,8 @@
 #include <cub/block/block_reduce.cuh>
 #include "../kernels_interface.h"
 #include "matmul_kernel.cuh"
+
+// 每个block有128个线程，每个block算一行，分配K行个block
 namespace kernel {
 template <int THREAD_PER_BLOCK, int ROW_PER_BLOCK>
 __global__ void matmul_kernel_cu_fp32(const float* input, const float* weight, float* output, int M,
@@ -14,11 +16,12 @@ __global__ void matmul_kernel_cu_fp32(const float* input, const float* weight, f
   if (start_row >= K) {
     return;
   }
-
+  // M 为列，K 为行
   constexpr int pack_size = 4;
+  // 可以理解为需要多少个线程来计算一行 
   const int pack_num = M / pack_size;
-  const int pack_off = pack_size * pack_num;
-
+  const int pack_off = pack_size * pack_num; // == M列
+// 找到行的Ptr索引，并将input和weight转换为float4*类型，访问连续的4个float值
 #pragma unroll
   for (int p = start_row; p < end_row; ++p) {
     sdata[tid] = 0;
@@ -27,6 +30,7 @@ __global__ void matmul_kernel_cu_fp32(const float* input, const float* weight, f
     float4* weight_float4_ptr = (float4*)(weight + row_offset);
 
 #pragma unroll
+    // i += 128 
     for (int i = tid; i < pack_num; i += blockDim.x) {
       float4 input_float4 = *(input_float4_ptr + i);
       float4 weight_float4 = *(weight_float4_ptr + i);
@@ -34,13 +38,14 @@ __global__ void matmul_kernel_cu_fp32(const float* input, const float* weight, f
                        input_float4.z * weight_float4.z + input_float4.w * weight_float4.w;
       sdata[tid] += part_sum;
     }
-
+    // 这里是算没有被整除的列，即M % 4
+    // 用128个线程去算余数，每个线程算一个值
     for (int i = pack_off + tid; i < M; i += blockDim.x) {
       sdata[tid] += input[i] * weight[row_offset + i];
     }
 
     __syncthreads();
-
+    
     using BlockReduce = cub::BlockReduce<float, THREAD_PER_BLOCK>;
     __shared__ typename BlockReduce::TempStorage temp;
     float part_sum = BlockReduce(temp).Sum(sdata[tid]);
@@ -85,7 +90,7 @@ __global__ void matmul_kernel_cu_fp32int8(const float* input, const int8_t* weig
     __syncthreads();
   }
 }
-
+// 代理方法，指定线程数量和线程块数量，以及参数检查
 void matmul_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight,
                       const tensor::Tensor& output, const float scale, const CudaConfig* config) {
   CHECK(input.is_empty() == false && input.dims_size() <= 2);
