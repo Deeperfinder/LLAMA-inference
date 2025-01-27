@@ -1,6 +1,74 @@
 import torch
 import torch.nn as nn
 
+import math
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class ModelArgs:
+    dim: int = 4096
+    n_layers: int = 32
+    n_heads: int = 32
+    norm_eps: float = 1e-5
+    max_batch_size: int = 32
+    max_seq_len: int = 2048
+
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, args: ModelArgs) -> None:
+        super(MultiHeadAttention, self).__init__()
+        self.dim = args.dim
+        self.n_heads = args.n_heads
+        self.head_dim = args.dim // args.n_heads
+        self.w_q = nn.Linear(self.dim, self.dim, bias=False)
+        self.w_k = nn.Linear(self.dim, self.dim, bias=False)
+        self.w_v = nn.Linear(self.dim, self.dim, bias=False)
+        self.w_o = nn.Linear(self.dim, self.dim, bias=False)
+        self.softmax = nn.Softmax(dim=-1)
+    
+    def forward(
+        self,
+        x: torch.Tensor,
+        start_pos: Optional[int],
+        freqs_cis: torch.Tensor,
+        # mask: Optional[torch.Tensor],
+    ):
+        """
+        Forward pass of the attention module
+
+        Args:
+            x: (torch.Tensor) : Input tensor.
+            start_pos (int) : Starting position for caching
+            freqs_cis (torch.Tensor) : Precomputed frequency tensor.
+            mask (torch.Tensor) : Mask tensor.
+
+        Returns:
+            torch.Tensor: Output tenso after attention
+        
+        """
+        bsz, seq_len, _ = x.shape
+        q, k, v = self.w_q(x), self.w_k(x), self.w_v(x)
+        q = q.view(bsz, seq_len, self.n_heads, self.head_dim)
+        k = k.view(bsz, seq_len, self.n_heads, self.head_dim)
+        v = v.view(bsz, seq_len, self.n_heads, self.head_dim)
+
+        q, k = apply_rotary_emb(q, k, freqs_cis= freqs_cis)
+
+        q = q.transpose(1, 2)
+        k = k.transpose(1, 2)
+        v = v.transpose(1, 2)
+        
+        score = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.head_dim)
+        # mask = torch.tril(torch.ones(seq_len, seq_len, dtype=bool))
+        # score = score.masked_fill(mask == 0, float("-inf"))
+        score = self.softmax(score.float()).type_as(q) 
+        output = torch.matmul(score, v)
+        output = output.permute(0, 2, 1, 3).contiguous().view(bsz, seq_len, self.dim)
+
+        output = self.w_o(output)
+        return output
+        
 class PositionalEncoding(nn.Module):
     """
     Positional encoding module.
@@ -28,14 +96,14 @@ class RMSNorm(nn.Module):
     为了保留模型的表达能力,RMSNorm引入了可学习的参数w和平移参数b,(通常只用w)
     y = w * x + b
     """
-    def __init__ (self, d_model, eps=1e-6):
+    def __init__ (self, d_model, eps=1e-5):
         super(RMSNorm, self).__init__()
         self.eps = eps
         self.weight = nn.Parameter(torch.ones(d_model))
 
     def forward(self, x):
         rms = torch.sqrt(torch.mean(x**2, dim=-1, keepdim=True) + self.eps)
-        x_normed = x / rms
+        x_normed = x * rms
         return self.weight * x_normed
     
 # torch.nn.modules.TransformerDecoder
@@ -51,7 +119,88 @@ class PositionwiseFeedForward(nn.Module):
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, x):
-        x = self.fc2(self.dropout(F.gelu(self.fc1(x))))
+        x = self.fc2(self.dropout(nn.GELU(self.fc1(x))))
         return self.dropout(x)
     
-    
+def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
+    """
+    Precompute the frequency tensor for complex exponentials (cis) with given dimensions.
+
+    This function calculates a frequency tensor with complex exponentials using the given dimension 'dim'
+    and the end index 'end'. The 'theta' parameter scales the frequencies.
+    The returned tensor contains complex values in complex64 data type.
+
+    Args:
+        dim (int): Dimension of the frequency tensor.
+        end (int): End index for precomputing frequencies.
+        theta (float, optional): Scaling factor for frequency computation. Defaults to 10000.0.
+
+    Returns:
+        torch.Tensor (end, dim // 2): Precomputed frequency tensor with complex exponentials.
+
+    """
+    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
+    # 时间步长 (0 -> end)
+    # (end, dim // 2)
+    t = torch.arange(end, device=freqs.device)  # type: ignore
+    freqs = torch.outer(t, freqs).float()  # type: ignore
+    freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
+    return freqs_cis
+def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
+    """
+    Reshape frequency tensor for broadcasting it with another tensor.
+
+    This function reshapes the frequency tensor to have the same shape as the target tensor 'x'
+    for the purpose of broadcasting the frequency tensor during element-wise operations.
+
+    Args:
+        freqs_cis (torch.Tensor): Frequency tensor to be reshaped.
+        x (torch.Tensor): Target tensor for broadcasting compatibility.
+
+    Returns:
+        torch.Tensor: Reshaped frequency tensor.
+
+    Raises:
+        AssertionError: If the frequency tensor doesn't match the expected shape.
+        AssertionError: If the target tensor 'x' doesn't have the expected number of dimensions.
+    """
+    ndim = x.ndim
+    assert 0 <= 1 < ndim
+    assert freqs_cis.shape == (x.shape[1], x.shape[-1])
+    shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
+    return freqs_cis.view(*shape)
+
+def apply_rotary_emb(
+    xq: torch.Tensor,
+    xk: torch.Tensor,
+    freqs_cis: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Apply rotary position embedding to query and key.
+    Args:
+        xq: query tensor, shape (batch, seq_len, n_heads, head_dim)
+        xk: key tensor, shape (batch, seq_len, n_heads, head_dim)
+        freqs_cis: cos/sin frequencies, shape (d_model//2, end)
+    Returns:
+        xq: query tensor, shape (batch, seq_len, d_model)
+        xk: key tensor, shape (batch, seq_len, d_model)
+    """
+    xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
+    xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
+    freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
+    xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
+    xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
+    return xq_out.type_as(xq), xk_out.type_as(xk)
+
+
+
+
+#class EncoderLayer(nn.Module):
+if __name__ == "__main__":
+    X = torch.randn(128, 16, 4096)
+    args_ = ModelArgs()
+    freq_cis = precompute_freqs_cis(args_.dim // args_.n_heads, args_.max_seq_len*2)
+    freq_cis = freq_cis[0 : 16]
+    attention = MultiHeadAttention(ModelArgs())
+    output = attention(X, 0, freq_cis)
+    print(output, output.shape)
