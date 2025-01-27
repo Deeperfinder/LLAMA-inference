@@ -13,7 +13,9 @@ class ModelArgs:
     norm_eps: float = 1e-5
     max_batch_size: int = 32
     max_seq_len: int = 2048
+    intermediate_size: int = 11008
 
+    drop_prob: int = 0.1
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, args: ModelArgs) -> None:
@@ -30,8 +32,9 @@ class MultiHeadAttention(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        start_pos: Optional[int],
         freqs_cis: torch.Tensor,
+        start_pos: Optional[int],
+        mask: Optional[torch.Tensor],
         # mask: Optional[torch.Tensor],
     ):
         """
@@ -60,8 +63,9 @@ class MultiHeadAttention(nn.Module):
         v = v.transpose(1, 2)
         
         score = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.head_dim)
-        # mask = torch.tril(torch.ones(seq_len, seq_len, dtype=bool))
-        # score = score.masked_fill(mask == 0, float("-inf"))
+        if mask is not None:
+            mask = torch.tril(torch.ones(seq_len, seq_len, dtype=bool))
+            score = score.masked_fill(mask == 0, float("-inf"))
         score = self.softmax(score.float()).type_as(q) 
         output = torch.matmul(score, v)
         output = output.permute(0, 2, 1, 3).contiguous().view(bsz, seq_len, self.dim)
@@ -192,15 +196,35 @@ def apply_rotary_emb(
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
     return xq_out.type_as(xq), xk_out.type_as(xk)
 
+class EncoderLayer(nn.Module):
+    def __init__(self, args: ModelArgs) -> None:
+        super(EncoderLayer, self).__init__()
+        self.attention = MultiHeadAttention(args)
+        self.norm1 = RMSNorm(args.dim)
+        self.drop1 = nn.Dropout(args.drop_prob)
 
+        self.ffn = PositionwiseFeedForward(args.dim, args.intermediate_size, args.drop_prob)
+        self.norm2 = RMSNorm(args.dim)
+        self.drop2 = nn.Dropout(args.drop_prob)
 
+    def forward(self, x, mask):
+        _x = x
+        x = self.attention(x, mask)
+        
+        x = self.drop1(x)
+        x = self.norm1(x + _x)
+        
+        _x = x
+        x = self.ffn(x)
+        x = self.norm2(x + _x)
+        return x
 
-#class EncoderLayer(nn.Module):
 if __name__ == "__main__":
+    # test MultiHeadAttention
     X = torch.randn(128, 16, 4096)
     args_ = ModelArgs()
     freq_cis = precompute_freqs_cis(args_.dim // args_.n_heads, args_.max_seq_len*2)
     freq_cis = freq_cis[0 : 16]
     attention = MultiHeadAttention(ModelArgs())
-    output = attention(X, 0, freq_cis)
+    output = attention(X, freq_cis, 0)
     print(output, output.shape)
