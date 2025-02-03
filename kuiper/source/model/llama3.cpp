@@ -670,6 +670,7 @@ void LLama2Model::attention_mha(int32_t layer_idx, const tensor::Tensor& pos_ten
   const auto& mha_layer = llama_layers_->mha_layer_;
   CHECK_NE(mha_layer, nullptr) << "The multi head attention layer is null pointer.";
   int pos = pos_tensor.index<int32_t>(0);
+  std::cout<<"pos:"<<pos<<std::endl;
   std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_pos(pos);
   std::dynamic_pointer_cast<op::MultiHeadAttention>(mha_layer)->set_layer_idx(layer_idx);
   STATUS_CHECK(mha_layer->forward(query, score_storage, key_cache, val_cache, mha_output));

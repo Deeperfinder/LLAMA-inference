@@ -58,6 +58,7 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
   float* query_head = query + head * head_size;
   float* score_head = score_ptr + head * seq_len;
   int head_offset = (head / kv_mul) * head_size;
+  // 这里如果pos很短的话，比如0~1, 那么只有threadIdx.x = 0， 1的线程会计算
   for (int t = threadIdx.x; t <= pos; t += blockDim.x) {
     float* key_head = key_cache + layer_offset + t * kv_dim + head_offset;
     /**
