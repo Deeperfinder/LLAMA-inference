@@ -541,8 +541,8 @@ def load_hf_model(model_path):
 
     # convert LlamaConfig to ModelArgs
     config = ModelArgs()
-    if any(['config.json' in path for path in os.listdir("/nfs/xf/llama2_model/Llama-2-7b-hf")]):
-        with open(os.path.join("/nfs/xf/llama2_model/Llama-2-7b-hf", 'config.json'), 'r') as f:
+    if any(['config.json' in path for path in os.listdir("/root/autodl-tmp/Tinyllama")]):
+        with open(os.path.join("/root/autodl-tmp/Tinyllama", 'config.json'), 'r') as f:
             config_json = json.load(f)
         config.dim = config_json["hidden_size"]
         config.n_layers = config_json["num_hidden_layers"]

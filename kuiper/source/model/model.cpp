@@ -229,7 +229,10 @@ std::string Model::decode(std::vector<int32_t> token_idxs) const {
 std::pair<tensor::Tensor, tensor::Tensor> Model::slice_kv_cache(int32_t layer_idx,
                                                                 int32_t token_pos) const {
   // (N , max_seq_len, dim), N 为layer_num
-  // 索引到第几个transformer块,layer_idx个transformer块，第token_pose个位置
+  // 索引到第几个transformer块, layer_idx个transformer块，第token_pose个位置
+  // 返回当前时间步的切片，以便计算最新的Key 和 value，并赋值到该位置
+  // token_pose 为当前的steps，即到了多少步
+
   int32_t layer_offset = layer_idx * config_->seq_len_ * config_->kv_dim_;
   int32_t cache_offset = layer_offset + token_pos * config_->kv_dim_;
 

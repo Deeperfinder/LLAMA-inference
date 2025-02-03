@@ -1,5 +1,6 @@
 #include <tensor/tensor.h>
 #include "swiglu_kernel.cuh"
+
 namespace kernel {
 __global__ void swiglu_kernel_cu_fp32(int size, const float* in1, const float* in2, float* out) {
   int tid = threadIdx.x;
@@ -12,7 +13,7 @@ __global__ void swiglu_kernel_cu_fp32(int size, const float* in1, const float* i
   float* smem2 = shared_mem + blockDim.x;
 
   smem1[tid] = in1[idx];
-  smem2[tid] = in2[idx];
+  smem2[tid] = in2[idx];  
   __syncthreads();
 
   float value = 1.0f / (1.0f + exp(-smem1[tid]));

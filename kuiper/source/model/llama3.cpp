@@ -619,6 +619,7 @@ void LLama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_ten
   int32_t pos = pos_tensor.index<int32_t>(0);
   // wq wk wv @ input
   const auto& [key, val] = slice_kv_cache(layer_idx, pos);
+  // 这里的 key, val, query 都是output
   // query 
   const auto& query_layer = llama_layers_->wq_layers_.at(layer_idx);
   CHECK_NE(query_layer, nullptr) << "The query layer in the attention block is null pointer.";
@@ -630,6 +631,7 @@ void LLama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor& pos_ten
   const auto& key_layer = llama_layers_->wk_layers_.at(layer_idx);
   CHECK_NE(key_layer, nullptr) << "The key layer in the attention block is null pointer.";
   STATUS_CHECK(key_layer->forward(rmsnorm_output, key));
+
   // value
   const auto& value_layer = llama_layers_->wv_layers_.at(layer_idx);
   CHECK_NE(value_layer, nullptr) << "The value layer in the attention block is null pointer.";

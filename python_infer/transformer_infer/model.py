@@ -15,6 +15,8 @@ class ModelArgs:
     max_seq_len: int = 2048
     intermediate_size: int = 11008
 
+    vocab_size: int = 151936
+    dec_voc_size: int = 151936
     drop_prob: int = 0.1
 
 class MultiHeadAttention(nn.Module):
@@ -33,6 +35,7 @@ class MultiHeadAttention(nn.Module):
         self,
         x: torch.Tensor,
         freqs_cis: torch.Tensor,
+        enc : Optional[torch.Tensor],
         start_pos: Optional[int],
         mask: Optional[torch.Tensor],
         # mask: Optional[torch.Tensor],
@@ -47,11 +50,15 @@ class MultiHeadAttention(nn.Module):
             mask (torch.Tensor) : Mask tensor.
 
         Returns:
-            torch.Tensor: Output tenso after attention
+            torch.Tensor: Output tensor after attention
         
         """
         bsz, seq_len, _ = x.shape
-        q, k, v = self.w_q(x), self.w_k(x), self.w_v(x)
+        if enc is not None:
+            q = self.w_q(x)
+            k,v = self.w_k(enc), self.w_v(enc)
+        else:
+            q, k, v = self.w_q(x), self.w_k(x), self.w_v(x)
         q = q.view(bsz, seq_len, self.n_heads, self.head_dim)
         k = k.view(bsz, seq_len, self.n_heads, self.head_dim)
         v = v.view(bsz, seq_len, self.n_heads, self.head_dim)
@@ -64,7 +71,9 @@ class MultiHeadAttention(nn.Module):
         
         score = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
-            mask = torch.tril(torch.ones(seq_len, seq_len, dtype=bool))
+            # mask = torch.tril(torch.ones(seq_len, seq_len, dtype=bool))
+            # mask为0的地方，值为true，指示哪些位置是有效的，哪些位置是无效的。
+            # masked_fill在conditoin为true的位置上，将对应的score值替换为"-inf"
             score = score.masked_fill(mask == 0, float("-inf"))
         score = self.softmax(score.float()).type_as(q) 
         output = torch.matmul(score, v)
@@ -72,7 +81,11 @@ class MultiHeadAttention(nn.Module):
 
         output = self.w_o(output)
         return output
-        
+
+class TokenEmbedding(nn.Embedding):
+    def __init__(self, args: ModelArgs):
+        super(TokenEmbedding, self).__init__(args.vocab_size, args.dim, padding_idx=1)
+
 class PositionalEncoding(nn.Module):
     """
     Positional encoding module.
@@ -150,6 +163,7 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = torch.outer(t, freqs).float()  # type: ignore
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
     return freqs_cis
+
 def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
     """
     Reshape frequency tensor for broadcasting it with another tensor.
@@ -209,7 +223,7 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, mask):
         _x = x
-        x = self.attention(x, mask)
+        x = self.attention(x, mask=mask)
         
         x = self.drop1(x)
         x = self.norm1(x + _x)
@@ -219,6 +233,38 @@ class EncoderLayer(nn.Module):
         x = self.norm2(x + _x)
         return x
 
+class DecoderLayer(nn.Module):
+    def __init__(self, args: ModelArgs) -> None:
+        super(DecoderLayer, self).__init__()
+        self.attention = MultiHeadAttention(args)
+        self.norm1 = RMSNorm(args.dim)
+        self.drop1 = nn.Dropout(args.drop_prob)
+
+
+        self.cross_attention = MultiHeadAttention(args)
+        self.drop2 = nn.Dropout(args.drop_prob)
+        self.norm2 = RMSNorm(args.dim)
+
+        self.ffn = PositionwiseFeedForward(args.dim, args.intermediate_size, args.drop_prob)
+        self.norm3 = RMSNorm(args.dim)
+        self.drop3 = nn.Dropout(args.drop_prob)
+
+    def forward(self, dec, enc, padding_mask, mask):
+        _x = dec
+        x = self.attention(x, mask=mask) # 下三角矩阵
+        x = self.drop1(x)
+        x = self.norm1(x + _x)
+
+        if enc is not None:
+            _x = x
+            x = self.cross_attention(x, enc, enc) # 对位置的掩码
+            x = self.drop2(x)
+            x = self.norm2(x + _x)
+        _x = x
+        x = self.ffn(x)
+        x = self.drop3(x)
+        x = self.norm3(x + _x)
+        
 if __name__ == "__main__":
     # test MultiHeadAttention
     X = torch.randn(128, 16, 4096)

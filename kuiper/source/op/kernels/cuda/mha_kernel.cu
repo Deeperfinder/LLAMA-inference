@@ -119,7 +119,7 @@ void mha_kernel_cu(int32_t pos, int32_t head_num, int32_t layer_index, int32_t s
   float* query = const_cast<float*>(query_tensor.ptr<float>());
   float* score = const_cast<float*>(score_tensor.ptr<float>());
   float* output = const_cast<float*>(mha_out.ptr<float>());
-
+  
   float* key_cache = const_cast<float*>(key_cache_tensor.ptr<float>());
   float* value_cache = const_cast<float*>(value_cache_tensor.ptr<float>());
 

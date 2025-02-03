@@ -1,7 +1,8 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model = "meta-llama/Llama-3.2-1B"
+model = "/root/autodl-tmp/Llama-3.2-1B"
 
+print(model)
 tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(
     model,
