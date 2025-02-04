@@ -1,7 +1,8 @@
 #include "emb_kernel.cuh"
 
-// 这里主要是把排列不规则的数据weight_ptr， 按照分词器的token index， 提取出来，并按照token index的顺序（即顺序摆放）
-// ，放到output_ptr中
+// 这里主要是把排列不规则的数据weight_ptr， 按照分词器的token index， 提取出来，
+// 并按照token index的顺序（即顺序摆放） ，放到output_ptr中
+// input_ptr: [ 0, 3, 6, 10]类似这样的数据，表示每个token的index，从weight中去找
 namespace kernel {
 __global__ void emb_kernel_cu_fp32(int32_t vocab_size, int32_t token_num, int32_t weight_dim,
                                    const int32_t* input_ptr, const float* weight_ptr,

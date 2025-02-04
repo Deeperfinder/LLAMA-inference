@@ -56,9 +56,15 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
 
   float scale = 1.f / sqrtf(head_size);
   float* query_head = query + head * head_size;
+  // 找到score的该block head的地址
   float* score_head = score_ptr + head * seq_len;
   int head_offset = (head / kv_mul) * head_size;
   // 这里如果pos很短的话，比如0~1, 那么只有threadIdx.x = 0， 1的线程会计算
+  // t×kv_dim对位到历史步和当前步长的位置
+  // 1. 第一步先定位到layer位置， key_cache表示的是头地址
+  // 2. 第二步定位到seq_len的位置， 即 cache = {layer_idx * seq_len * kv_dim}，
+  //    seq_len的位置也就是 seq_len * kv_dim
+  // 3. 第三步定位到head的位置，即 head_idx * head_size, 这里要注意 kv_dim = head_num * head_size
   for (int t = threadIdx.x; t <= pos; t += blockDim.x) {
     float* key_head = key_cache + layer_offset + t * kv_dim + head_offset;
     /**
@@ -90,6 +96,7 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
     }
 
     score *= scale;
+    // 第t步，即t个token的值
     score_head[t] = score;
   }
   __syncthreads();
@@ -98,10 +105,14 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
   __syncthreads();
 
   float* output_head = output + head * head_size;
+  // 固定value的第二维度(1+cache_len, head_size) 中的head_size, 内循环为列（seq_len）
+  // 每次计算一个token，直至把所有token计算完。
+  // 得到一个值， 并循环head_size次，就得到了总的 score * value
   for (int i = threadIdx.x; i < head_size; i += blockDim.x) {
     float value = 0.0f;
 #pragma unroll
     for (int t = 0; t <= pos; t++) {
+      // 找到value_head第pos个token的地址
       float* value_head = value_cache + layer_offset + t * kv_dim + head_offset;
       float score = score_head[t];
       value += score * value_head[i];
