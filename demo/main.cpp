@@ -59,15 +59,9 @@ int main(int argc, char* argv[]) {
     checkpoint_path, false);
   auto init_status = model.init(base::DeviceType::kDeviceCUDA);
   if (!init_status) {
-<<<<<<< HEAD
-    LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_msg();
-  }
-  const std::string& sentence = "a";
-=======
     LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
   }
   const std::string& sentence = "hello";
->>>>>>> upstream/main
 
   auto start = std::chrono::steady_clock::now();
   printf("Generating...\n");

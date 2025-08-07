@@ -23,15 +23,14 @@ if (QWEN2_SUPPORT)
   message(STATUS "QWEN2 SUPPORT")
   add_definitions(-DQWEN2_SUPPORT)
 endif()
-<<<<<<< HEAD
-=======
+
 
 option(QWEN3_SUPPORT OFF)
 if (QWEN3_SUPPORT)
   message(STATUS "QWEN3 SUPPORT")
   add_definitions(-DQWEN3_SUPPORT)
 endif()
->>>>>>> upstream/main
+# ---- Add dependencies via CPM ----
 # ---- Add dependencies via CPM ----
 # see https://github.com/TheLartians/CPM.cmake for more info
 option(USE_CPM "Use CPM for dependency management" OFF)
@@ -66,11 +65,9 @@ if(USE_CPM)
   )
   find_package(sentencepiece REQUIRED)
 
-<<<<<<< HEAD
-  if (LLAMA3_SUPPORT OR QWEN2_SUPPORT)
-=======
+
   if (LLAMA3_SUPPORT OR QWEN2_SUPPORT OR QWEN3_SUPPORT)
->>>>>>> upstream/main
+  
     CPMAddPackage(
         NAME absl
         GITHUB_REPOSITORY abseil/abseil-cpp

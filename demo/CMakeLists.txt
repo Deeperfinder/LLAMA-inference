@@ -21,9 +21,6 @@ if (QWEN2_SUPPORT)
     target_link_libraries(qwen_infer llama)
     target_link_libraries(qwen_infer absl::base re2::re2 nlohmann_json::nlohmann_json)
     set_target_properties(qwen_infer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-<<<<<<< HEAD
-endif()
-=======
 elseif (QWEN3_SUPPORT)
     message(STATUS "LINK QWEN3 SUPPORT")
     add_executable(qwen3_infer main_qwen3.cpp)
@@ -35,4 +32,4 @@ elseif (QWEN3_SUPPORT)
     target_link_libraries(qwen3_infer absl::base re2::re2 nlohmann_json::nlohmann_json)
     set_target_properties(qwen3_infer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif ()
->>>>>>> upstream/main
+

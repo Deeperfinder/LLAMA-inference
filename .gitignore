@@ -2,3 +2,4 @@
 .clang-format
 model/
 .vscode/
+/lib/

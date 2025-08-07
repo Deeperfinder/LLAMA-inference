@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-#include <cub/block/block_reduce.cuh>
-#include "rmsnorm_kernel.cuh"
-namespace kernel {
-=======
 #include <device_launch_parameters.h>
 #include <cub/block/block_reduce.cuh>
 #include "rmsnorm_kernel.cuh"
@@ -64,7 +59,6 @@ static __global__ void row_rmsnorm_f32_dim(float* in, float* wei, float* out, in
   }
 }
 
->>>>>>> upstream/main
 template <int32_t BLOCK_DIM>
 static __global__ void row_rmsnorm_f32(float* in, float* wei, float* out, int size, float eps) {
   const int tid = threadIdx.x;
@@ -123,11 +117,7 @@ void rmsnorm_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight
         weight.device_type() == base::DeviceType::kDeviceCUDA &&
         output.device_type() == base::DeviceType::kDeviceCUDA);
 
-<<<<<<< HEAD
-#ifdef QWEN2_SUPPORT
-=======
 #if defined(QWEN2_SUPPORT) || defined(QWEN3_SUPPORT)
->>>>>>> upstream/main
   const float eps = 1e-6f;
 #else
   const float eps = 1e-5f;
@@ -144,8 +134,6 @@ void rmsnorm_kernel_cu(const tensor::Tensor& input, const tensor::Tensor& weight
     row_rmsnorm_f32<128><<<1, threads_num>>>(in_ptr, wei_ptr, out_ptr, size, eps);
   }
 }
-<<<<<<< HEAD
-=======
 
 void rmsnorm_kernel_cu_dim(const tensor::Tensor& input, const tensor::Tensor& weight,
                            const tensor::Tensor& output, int32_t dim, void* stream) {
@@ -174,5 +162,4 @@ void rmsnorm_kernel_cu_dim(const tensor::Tensor& input, const tensor::Tensor& we
     row_rmsnorm_f32_dim<<<dim_size, threads_num>>>(in_ptr, wei_ptr, out_ptr, dim_size, size, eps);
   }
 }
->>>>>>> upstream/main
 }  // namespace kernel

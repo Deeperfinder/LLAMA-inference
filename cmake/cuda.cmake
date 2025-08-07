@@ -30,13 +30,13 @@ endif ()
 if (CUDA_FOUND)
     message(STATUS "Found CUDA Toolkit v${CUDA_VERSION_STRING}")
 
-<<<<<<< HEAD
+    
     set(HAVE_CUDA TRUE)
 
     set(CMAKE_CUDA_ARCHITECTURES "75;80;86")
 
     set(CMAKE_CUDA_COMPILER_LIBRARY_ROOT /usr/local/cuda)
-=======
+
     include(FindCUDA/select_compute_arch)
     CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
     string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
@@ -57,7 +57,6 @@ if (CUDA_FOUND)
         message(FATAL_ERROR "Couldn't find CUDA library root.")
     endif ()
     unset(CMAKE_CUDA_COMPILER_LIBRARY_ROOT_FROM_NVVMIR_LIBRARY_DIR)
->>>>>>> upstream/main
 else ()
     message(STATUS "CUDA was not found.")
 endif ()

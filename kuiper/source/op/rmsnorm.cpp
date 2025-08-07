@@ -22,10 +22,6 @@ base::Status RmsNormLayer::forward() {
   if (device_type_ == base::DeviceType::kDeviceCUDA) {
     CHECK(cuda_config_ != nullptr);
   }
-<<<<<<< HEAD
-  kernel::get_rmsnorm_kernel(device_type_)(input, weight, output,
-                                           cuda_config_ ? cuda_config_->stream : nullptr);
-=======
   if (input.dims_size() == 1) {
     kernel::get_rmsnorm_kernel(device_type_)(input, weight, output,
                                              cuda_config_ ? cuda_config_->stream : nullptr);
@@ -34,31 +30,12 @@ base::Status RmsNormLayer::forward() {
                                                  cuda_config_ ? cuda_config_->stream : nullptr);
   }
 
->>>>>>> upstream/main
   return base::error::Success();
 }
 
 base::Status RmsNormLayer::check() const {
-<<<<<<< HEAD
-  auto status = check_tensor_with_dim(get_input(0), device_type_, data_type_, dim_);
-  if (!status) {
-    LOG(ERROR) << "The input tensor error in the rmsnorm layer.";
-    return status;
-  }
 
-  status = check_tensor_with_dim(get_weight(0), device_type_, data_type_, dim_);
-  if (!status) {
-    LOG(ERROR) << "The weight tensor error in the rmsnorm layer.";
-    return status;
-  }
-
-  status = check_tensor_with_dim(get_output(0), device_type_, data_type_, dim_);
-  if (!status) {
-    LOG(ERROR) << "The output tensor error in the rmsnorm layer.";
-    return status;
-  }
-  return base::error::Success();
-=======
+  
   int32_t dim_size = get_input(0).dims_size();
   if (dim_size > 1) {
     int dim_head_size = get_input(0).get_dim(dim_size - 1);
@@ -87,7 +64,7 @@ base::Status RmsNormLayer::check() const {
     }
     return base::error::Success();
   }
->>>>>>> upstream/main
+
 }
 
 }  // namespace op

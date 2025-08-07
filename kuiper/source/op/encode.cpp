@@ -55,11 +55,7 @@ int32_t SpeEncodeLayer::vocab_size() const {
   return spe->GetPieceSize();
 }
 
-<<<<<<< HEAD
-#if defined(LLAMA3_SUPPORT) || defined(QWEN2_SUPPORT)
-=======
 #if defined(LLAMA3_SUPPORT) || defined(QWEN2_SUPPORT) || defined(QWEN3_SUPPORT)
->>>>>>> upstream/main
 static const std::string PAT_STR =
     R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?:$|[^\S])|\s+)";
 
