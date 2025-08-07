@@ -1,7 +1,14 @@
 #include <base/cuda_config.h>
 #include <tensor/tensor.h>
+<<<<<<< HEAD
 #include <cub/cub.cuh>
 #include "mha_kernel.cuh"
+=======
+#include <cfloat>
+#include <cub/cub.cuh>
+#include "mha_kernel.cuh"
+#include <base/tick.h>
+>>>>>>> upstream/main
 namespace kernel {
 constexpr static int thread_num = 256;
 __device__ void softmax_gpu(float* __restrict__ x, int size) {
@@ -44,6 +51,10 @@ __device__ void softmax_gpu(float* __restrict__ x, int size) {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/main
 __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float* query,
                                             float* score_ptr, float* output, float* key_cache,
                                             float* value_cache, int32_t kv_dim, int32_t kv_mul,
@@ -54,6 +65,7 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
     return;
   }
 
+<<<<<<< HEAD
   float scale = 1.f / sqrtf(head_size);
   float* query_head = query + head * head_size;
   float* score_head = score_ptr + head * seq_len;
@@ -86,6 +98,34 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
       score += key_head_float4.y * query_head_float4.y;
       score += key_head_float4.z * query_head_float4.z;
       score += key_head_float4.w * query_head_float4.w;
+=======
+  extern __shared__ float s_query_head[];
+  float scale = 1.f / sqrtf(float(head_size));
+  float* query_head = query + head * head_size;
+
+  // 预加载query到共享内存
+  for (int i = threadIdx.x; i < head_size; i += blockDim.x) {
+    s_query_head[i] = query_head[i];
+  }
+  __syncthreads();
+
+  float* score_head = score_ptr + head * seq_len;
+  // head当前的注意力头索引，kv_mul用于gqa，head_size表示一个自注意力头的维度
+  // kv_dim = head_size * head_num，多头自注意力情况下的key,value 维度
+  // kv_dim = head_size * head_num / kv_num，GQA情况下的key,value 维度
+  int head_offset = (head / kv_mul) * head_size;
+  // 计算自注意力分数
+  for (int t = threadIdx.x; t <= pos; t += blockDim.x) {
+    float* key_head = key_cache + layer_offset + t * kv_dim + head_offset;
+
+    float score = 0.0f;
+    for (int i = 0; i < head_size; i += 4) {
+      float4 key_val = *reinterpret_cast<float4*>(key_head + i);
+      float4 query_val = *reinterpret_cast<float4*>(s_query_head + i);
+
+      score += key_val.x * query_val.x + key_val.y * query_val.y + key_val.z * query_val.z +
+               key_val.w * query_val.w;
+>>>>>>> upstream/main
     }
 
     score *= scale;
@@ -97,9 +137,15 @@ __global__ void multi_head_attention_kernel(int32_t pos, int32_t seq_len, float*
   __syncthreads();
 
   float* output_head = output + head * head_size;
+<<<<<<< HEAD
   for (int i = threadIdx.x; i < head_size; i += blockDim.x) {
     float value = 0.0f;
 #pragma unroll
+=======
+  // 使用自注意力分数对value矩阵加权
+  for (int i = threadIdx.x; i < head_size; i += blockDim.x) {
+    float value = 0.0f;
+>>>>>>> upstream/main
     for (int t = 0; t <= pos; t++) {
       float* value_head = value_cache + layer_offset + t * kv_dim + head_offset;
       float score = score_head[t];
@@ -124,7 +170,11 @@ void mha_kernel_cu(int32_t pos, int32_t head_num, int32_t layer_index, int32_t s
   float* value_cache = const_cast<float*>(value_cache_tensor.ptr<float>());
 
   cudaStream_t stream = config->stream;
+<<<<<<< HEAD
   multi_head_attention_kernel<<<head_num, thread_num, 0, stream>>>(
+=======
+  multi_head_attention_kernel<<<head_num, thread_num, head_size * sizeof(float), stream>>>(
+>>>>>>> upstream/main
       pos, seq_len, query, score, output, key_cache, value_cache, kv_dim, kv_mul, head_num,
       head_size, layer_offset);
 }

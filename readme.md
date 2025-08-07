@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ### course1-内存管理和设备类
 allocator类来分配不同deive的内存，使用buffer类来管理内存，use_external判断是否由buffer管理，
 buffer是智能指针，可以自动释放内存，析构函数去释放ptr
@@ -143,6 +144,8 @@ memory = K(步长 or token长度) × dim(V的维度) × N(transformer的层数) 
 <br>
 <br>
 <br>
+=======
+>>>>>>> upstream/main
 # KuiperLLama 动手自制大模型推理框架，支持LLama2/3和Qwen2.5
 > News：新课发布，《动手自制大模型推理框架》，全手写cuda算子，课程框架支持LLama2和3.x以及Qwen2.5模型
 
@@ -150,7 +153,11 @@ Hi，各位朋友们好！我是 KuiperInfer 的作者。KuiperInfer 作为一�
 如今在原课程的基础上，**我们全新推出了《动手自制大模型推理框架》， 新课程支持Llama系列大模型（包括最新的LLama3.2）以及Qwen2.5系列大模型，同时支持 Cuda 加速和 Int8 量化**，自推出以来便广受好评。
 
 ## 《动手自制大模型推理框架》课程目录：
+<<<<<<< HEAD
 https://l0kzvikuq0w.feishu.cn/docx/ZF2hd0xfAoaXqaxcpn2c5oHAnBc
+=======
+https://tvle9mq8jh.feishu.cn/docx/AGb0dpqwfohQ9oxx4QycqbCjnJh
+>>>>>>> upstream/main
 ## 《动手自制大模型推理框架》课程优势
 
 1. 采用最新的C++ 20标准去写代码，统一、美观的代码风格，良好的错误处理；
@@ -272,3 +279,12 @@ make -j16
 # 和 huggingface 推理的结果进行对比
 python3 hf_infer/qwen2_infer.py
 ```
+<<<<<<< HEAD
+=======
+
+## Qwen3推理
+和上面同理，我们先从huggingface仓库中将模型下载到本地。
+1. tools/export_qwen3/load.py中导出为pth，模型的输入`model_name`和输出地址`output_file`依次需要填写；
+2. 导出pth格式的模型后，再用同文件夹下的write_bin.py导出qwen.bin；
+3. 用CMake选项`QWEN3_SUPPORT`重新编译项目，其他步骤就都是一样的了。
+>>>>>>> upstream/main

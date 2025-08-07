@@ -30,6 +30,12 @@ typedef void (*MHAKernel)(int32_t pos, int32_t head_num, int32_t layer_index, in
 typedef void (*RMSNormKernel)(const tensor::Tensor& input, const tensor::Tensor& weight,
                               const tensor::Tensor& output, void* stream);
 
+<<<<<<< HEAD
+=======
+typedef void (*RMSNormKernelDim)(const tensor::Tensor& input, const tensor::Tensor& weight,
+                                 const tensor::Tensor& output, int32_t dim, void* stream);
+
+>>>>>>> upstream/main
 typedef void (*RoPEKernel)(int32_t dim, int32_t kv_dim, int32_t head_size,
                            const tensor::Tensor& input_q, const tensor::Tensor& input_k,
                            const tensor::Tensor& input_pos, const tensor::Tensor& sin_cache,
@@ -66,5 +72,10 @@ SoftmaxInplaceKernel get_softmax_kernel(base::DeviceType device_type);
 SwigluKernel get_swiglu_kernel(base::DeviceType device_type, void* stream = nullptr);
 
 ScaleSumKernel get_scale_sum_kernel(base::DeviceType device_type);
+<<<<<<< HEAD
+=======
+
+RMSNormKernelDim get_rmsnorm_dim_kernel(base::DeviceType device_type);
+>>>>>>> upstream/main
 }  // namespace kernel
 #endif  // KERNELS_INTERFACE_H
